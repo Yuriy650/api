@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import {from, map, Observable, of, switchMap} from "rxjs";
+import {catchError, from, map, Observable, of, switchMap} from "rxjs";
 import {User} from "../models/user.interface";
 import {InjectRepository} from "@nestjs/typeorm";
 import {UserEntity} from "../models/user.entity";
@@ -41,7 +41,7 @@ export class AuthService {
     }
 
     comparePassword(password: string, passwordHash: string): Observable<any | boolean> {
-        return of<any | boolean>(bcrypt.compare(password, passwordHash))
+        return of<any | boolean>(bcrypt.compare(String(password), String(passwordHash)));
     }
 
     public validateUser(email: string, password: string): Observable<User> {
@@ -56,9 +56,10 @@ export class AuthService {
                         if (isValidPassword) {
                             const {password, ...result} = user;
                             return result;
-                        } else {
-                            throw Error;
                         }
+                    }),
+                    catchError((err) => {
+                        throw 'error:' + err;
                     })
                 )
             })
@@ -72,9 +73,26 @@ export class AuthService {
                 if(user) {
                     //create JWT - credentials
                     return from(this.jwtService.signAsync({user}));
-                } else {
-                    return "Wrong Credentials"
                 }
+            }),
+            catchError((err) => {
+                throw 'error' + err;
+            })
+        )
+    }
+
+    public findUserById(id: number): Observable<User> {
+        return from(this.userRepository.findOne({
+                where: {
+                    id
+                },
+
+                relations: ['feedPosts']
+            }
+        )).pipe(
+            map((user: User) => {
+                delete user.password;
+                return user
             })
         )
     }
