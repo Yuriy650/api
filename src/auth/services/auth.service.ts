@@ -40,7 +40,7 @@ export class AuthService {
         )
     }
 
-    comparePassword(password: string, passwordHash: string): Observable<any | boolean> {
+    public comparePassword(password: string, passwordHash: string): Observable<any | boolean> {
         return of<any | boolean>(bcrypt.compare(String(password), String(passwordHash)));
     }
 
@@ -77,22 +77,6 @@ export class AuthService {
             }),
             catchError((err) => {
                 throw 'error' + err;
-            })
-        )
-    }
-
-    public findUserById(id: number): Observable<User> {
-        return from(this.userRepository.findOne({
-                where: {
-                    id
-                },
-
-                relations: ['feedPosts']
-            }
-        )).pipe(
-            map((user: User) => {
-                delete user.password;
-                return user
             })
         )
     }
